@@ -1,0 +1,91 @@
+
+---
+- name: Unzipping files from tomcat10
+  hosts: windows
+  gather_facts: false
+  tasks:
+   - name: Unzipping
+     win_unzip:
+      src: C:\\temp\\apache-tomcat-10.0.16-windows-x64.zip
+      dest: C:\\
+...
+
+---
+- name: Setting Environment variables
+  hosts: windows
+  gather_facts: false
+  tasks:
+   - name: Env variables for windows machine
+     win_environment:
+      name: JAVA_HOME
+      value: "C:\\Program Files\\Microsoft\\jdk-17.0.1.12-hotspot"
+      state: present
+      level: machine
+     win_environment:
+      name: classpath
+      value: "C:\\apache-tomcat-10.0.16\\lib\\servlet-api.jar"
+      state: present
+      level: machine
+     win_environment:
+      name: CATALINA_HOME
+      value: "C:\\apache-tomcat-10.0.16\\"
+      state: present
+      level: machine
+...
+
+---
+- name: Extending Path variables
+  hosts: windows
+  gather_facts: false
+  tasks:
+   - name: Winpath
+     win_path:
+      elements:
+       - "%CATALINA_HOME%\\bin"
+      state: present
+...
+
+
+---
+- name: Installing Tomcat from batch file
+  hosts: windows
+  gather_facts: false
+  tasks:
+   - name: Configuring tomcat
+     win_shell:
+      "C:\\apache-tomcat-10.0.16\\bin\\service.bat install"
+...
+
+---
+- name: Creating user and assigning role
+  hosts: windows
+  gather_facts: false
+  tasks:
+   - name: Creating user id
+     win_user:
+      name: tomcat-msn
+      password: Admin@123
+      state: present
+      groups:
+       - Users
+   - name: Assigning role
+     win_user_right:
+      name: SeServiceLogonRight
+      users:
+       - .\tomcat-msn
+      action: add
+...
+
+---
+- name: Starting service
+  hosts: windows
+  tasks:
+   - name: Restarting service
+     win_service:
+      name: tomcat10
+      state: started
+      start_mode: manual
+      username: .\tomcat-msn
+      password: Admin@123
+      confirm_password: Admin@123
+...
